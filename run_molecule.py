@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from mpi4py import MPI
 from baselines.common import set_global_seeds
 from baselines import logger
