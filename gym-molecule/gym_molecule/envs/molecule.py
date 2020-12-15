@@ -66,8 +66,10 @@ def load_scaffold():
 
 
 def load_conditional(type='low'):
+    # Load data set!
     if type=='low':
         cwd = os.path.dirname(__file__)
+        # os.path.join depending on oeprative system (do not use /)
         path = os.path.join(os.path.dirname(cwd), 'dataset',
                             'opt.test.logP-SA')
         import csv
@@ -78,8 +80,7 @@ def load_conditional(type='low'):
         # print(data[799])
     elif type=='high':
         cwd = os.path.dirname(__file__)
-        path = os.path.join(os.path.dirname(cwd), 'dataset',
-                            'zinc_plogp_sorted.csv')
+        path = os.path.join(os.path.dirname(cwd), 'dataset', 'zinc_plogp_sorted.csv')
         import csv
         with open(path, 'r') as fp:
             reader = csv.reader(fp, delimiter=',', quotechar='"')
@@ -93,6 +94,7 @@ def load_conditional(type='low'):
 
 
 class MoleculeEnv(gym.Env):
+    # Erweiterung von gym und baut das MoleculeEnvironment weiter auf und fügt dann die Molecule daten hinzu
     metadata = {'render.modes': ['human']}
     def __init__(self):
         pass
@@ -108,6 +110,7 @@ class MoleculeEnv(gym.Env):
         self.reward_target = reward_target
         self.force_final = force_final
 
+        # get dataset and get Mol
         self.conditional_list = load_conditional(conditional)
         if self.is_conditional:
             self.conditional = random.sample(self.conditional_list,1)[0]
@@ -116,6 +119,8 @@ class MoleculeEnv(gym.Env):
         else:
             self.mol = Chem.RWMol()
         self.smile_list = []
+
+        # change possible atoms to predefined list
         if data_type=='gdb':
             possible_atoms = ['C', 'N', 'O', 'S', 'Cl'] # gdb 13
         elif data_type=='zinc':
@@ -148,6 +153,7 @@ class MoleculeEnv(gym.Env):
         else:
             self.d_n = len(self.possible_atom_types)
 
+        # check later ma
         self.max_action = max_action
         self.min_action = min_action
         if data_type=='gdb':
@@ -221,6 +227,8 @@ class MoleculeEnv(gym.Env):
         total_atoms = self.mol.GetNumAtoms()
 
         ### take action
+
+        # Action for step (c)
         if action[0,3]==0 or self.counter < self.min_action: # not stop
             stop = False
             if action[0, 1] >= total_atoms:
@@ -1128,9 +1136,7 @@ def zinc_molecule_filter(mol):
 
 
 # TODO(Bowen): check
-def steric_strain_filter(mol, cutoff=0.82,
-                         max_attempts_embed=20,
-                         max_num_iters=200):
+def steric_strain_filter(mol, cutoff=0.82, max_attempts_embed=20, max_num_iters=200):
     """
     Flags molecules based on a steric energy cutoff after max_num_iters
     iterations of MMFF94 forcefield minimization. Cutoff is based on average

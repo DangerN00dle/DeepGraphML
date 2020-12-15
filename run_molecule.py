@@ -21,8 +21,14 @@ def train(args,seed,writer=None):
         logger.configure(format_strs=[])
     workerseed = seed + 10000 * MPI.COMM_WORLD.Get_rank()
     set_global_seeds(workerseed)
+    
+    # args.env is molecule
     if args.env=='molecule':
+
+        # check what gym.make does in detail
         env = gym.make('molecule-v0')
+        print(env)
+        # goes into molecule/MoleculeEnv(gym.Env)
         env.init(data_type=args.dataset,logp_ratio=args.logp_ratio,qed_ratio=args.qed_ratio,sa_ratio=args.sa_ratio,reward_step_total=args.reward_step_total,is_normalize=args.normalize_adj,reward_type=args.reward_type,reward_target=args.reward_target,has_feature=bool(args.has_feature),is_conditional=bool(args.is_conditional),conditional=args.conditional,max_action=args.max_action,min_action=args.min_action) # remember call this after gym.make!!
     elif args.env=='graph':
         env = GraphEnv()
@@ -52,8 +58,7 @@ def arg_parser():
 
 def molecule_arg_parser():
     parser = arg_parser()
-    parser.add_argument('--env', type=str, help='environment name: molecule; graph',
-                        default='molecule')
+    parser.add_argument('--env', type=str, help='environment name: molecule; graph', default='molecule')
     parser.add_argument('--seed', help='RNG seed', type=int, default=666)
     parser.add_argument('--num_steps', type=int, default=int(5e7))
     parser.add_argument('--name', type=str, default='test_conditional')
@@ -130,3 +135,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# From Main -> def run_molecule/train
+# Load data set in molecule/def load_conditional
