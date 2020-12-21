@@ -49,18 +49,18 @@ def convert_radical_electrons_to_hydrogens(mol):
                 a.SetNumExplicitHs(num_radical_e)
     return m
 
-def load_scaffold():
-    cwd = os.path.dirname(__file__)
-    path = os.path.join(os.path.dirname(cwd), 'dataset',
-                       'vocab.txt')  # gdb 13
-    with open(path, 'r') as fp:
-        reader = csv.reader(fp, delimiter=',', quotechar='"')
-        data = [Chem.MolFromSmiles(row[0]) for row in reader]
-        data = [mol for mol in data if mol.GetRingInfo().NumRings() == 1 and (mol.GetRingInfo().IsAtomInRingOfSize(0, 5) or mol.GetRingInfo().IsAtomInRingOfSize(0, 6))]
-        for mol in data:
-            Chem.SanitizeMol(mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-        print('num of scaffolds:', len(data))
-        return data
+# def load_scaffold():
+#     cwd = os.path.dirname(__file__)
+#     path = os.path.join(os.path.dirname(cwd), 'dataset',
+#                        'vocab.txt')  # gdb 13
+#     with open(path, 'r') as fp:
+#         reader = csv.reader(fp, delimiter=',', quotechar='"')
+#         data = [Chem.MolFromSmiles(row[0]) for row in reader]
+#         data = [mol for mol in data if mol.GetRingInfo().NumRings() == 1 and (mol.GetRingInfo().IsAtomInRingOfSize(0, 5) or mol.GetRingInfo().IsAtomInRingOfSize(0, 6))]
+#         for mol in data:
+#             Chem.SanitizeMol(mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+#         print('num of scaffolds:', len(data))
+#         return data
 
 
 
@@ -88,9 +88,9 @@ def load_conditional(type='low'):
             # data = [row for id, row in enumerate(reader)]
             data = data[0:800]
     return data
-# data = load_conditional('low')
-# data = load_conditional('high')
-# print(data[799])
+data = load_conditional('low')
+data = load_conditional('high')
+print(data[799])
 
 
 class MoleculeEnv(gym.Env):
@@ -110,22 +110,21 @@ class MoleculeEnv(gym.Env):
         self.reward_target = reward_target
         self.force_final = force_final
 
-        # get dataset and get Mol
+        # load conditional data
         self.conditional_list = load_conditional(conditional)
         if self.is_conditional:
             self.conditional = random.sample(self.conditional_list,1)[0]
             self.mol = Chem.RWMol(Chem.MolFromSmiles(self.conditional[0]))
             Chem.SanitizeMol(self.mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
         else:
-            self.mol = Chem.RWMol()
+            # self.mol = Chem.RWMol()
+            self.mol = Chem.RWMol(Chem.MolFromSmiles('BrBr.[C:3]([NH:7][NH:8][C:9]1([C:18]#[N:19])[CH2:14][CH:13]([CH3:15])[CH2:12][C:11]([CH3:17])([CH3:16])[CH2:10]1)([CH3:6])([CH3:5])[CH3:4]'))
         self.smile_list = []
 
         # change possible atoms to predefined list
-        if data_type=='gdb':
-            possible_atoms = ['C', 'N', 'O', 'S', 'Cl'] # gdb 13
-        elif data_type=='zinc':
+        if data_type=='zinc':
             possible_atoms = ['C', 'N', 'O', 'S', 'P', 'F', 'I', 'Cl',
-                              'Br']  # ZINC
+                              'Br', 'H']  # ZINC
         if self.has_feature:
             self.possible_formal_charge = np.array([-1, 0, 1])
             self.possible_implicit_valence = np.array([-1,0, 1, 2, 3, 4])
@@ -229,6 +228,7 @@ class MoleculeEnv(gym.Env):
         ### take action
 
         # Action for step (c)
+        print(action)
         if action[0,3]==0 or self.counter < self.min_action: # not stop
             stop = False
             if action[0, 1] >= total_atoms:
@@ -372,9 +372,9 @@ class MoleculeEnv(gym.Env):
             self.mol = Chem.RWMol(Chem.MolFromSmiles(smile))
             Chem.SanitizeMol(self.mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_KEKULIZE)
         else:
-            self.mol = Chem.RWMol()
+            self.mol = Chem.RWMol(Chem.MolFromSmiles('BrBr.[C:3]([NH:7][NH:8][C:9]1([C:18]#[N:19])[CH2:14][CH:13]([CH3:15])[CH2:12][C:11]([CH3:17])([CH3:16])[CH2:10]1)([CH3:6])([CH3:5])[CH3:4]'))
             # self._add_atom(np.random.randint(len(self.possible_atom_types)))  # random add one atom
-            self._add_atom(0) # always add carbon first
+            # self._add_atom(0) # always add carbon first
         self.smile_list= [self.get_final_smiles()]
         self.counter = 0
         ob = self.get_observation()
@@ -408,8 +408,10 @@ class MoleculeEnv(gym.Env):
         # other atom with the new bond type
         bond = self.mol.GetBondBetweenAtoms(int(action[0,0]), int(action[0,1]))
         if bond:
-            # print('bond exist!')
-            return False
+            self.mol.RemoveBond(int(action[0,0]), int(action[0,1]))
+            return True
+            # # print('bond exist!')
+            # return False
         else:
             self.mol.AddBond(int(action[0,0]), int(action[0,1]), order=bond_type)
             # bond = self.mol.GetBondBetweenAtoms(int(action[0, 0]), int(action[0, 1]))
@@ -1450,8 +1452,8 @@ def get_normalized_values():
 
 
 # smile = 'C'*38
-smile = 'CCCCCCCCCC(CCC)(CCCCCCC)CCCCCCCCC(CCCCC)CC(C)C'
-print(smile, reward_penalized_log_p(Chem.MolFromSmiles(smile)))
+# smile = 'CCCCCCCCCC(CCC)(CCCCCCC)CCCCCCCCC(CCCCC)CC(C)C'
+# print(smile, reward_penalized_log_p(Chem.MolFromSmiles(smile)))
 
 if __name__ == '__main__':
     env = gym.make('molecule-v0') # in gym format

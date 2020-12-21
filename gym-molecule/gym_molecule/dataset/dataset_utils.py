@@ -119,18 +119,3 @@ class gdb_dataset:
     mol = Chem.MolFromSmiles(smiles)
     return mol
 
-# # TESTS
-# path = 'gdb13.rand1M.smi.gz'
-# dataset = gdb_dataset(path)
-#
-# print(len(dataset))
-# mol,_ = dataset[0]
-# graph = mol_to_nx(mol)
-# graph_sub = graph.subgraph([0,3,5,7,9])
-# graph_sub_new = nx.convert_node_labels_to_integers(graph_sub,label_attribute='old')
-# graph_sub_node = graph_sub.nodes()
-# graph_sub_new_node = graph_sub_new.nodes()
-# matrix = nx.adjacency_matrix(graph_sub)
-# np_matrix = matrix.toarray()
-# print(np_matrix)
-# print('end')
